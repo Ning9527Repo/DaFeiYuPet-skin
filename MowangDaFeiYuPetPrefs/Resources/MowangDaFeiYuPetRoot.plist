@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>title</key>
+	<string>大肥鱼</string>
+	<key>items</key>
+	<array>
+        <dict>
+            <key>cell</key><string>PSLinkListCell</string>
+            <key>detail</key><string>PSListItemsController</string>
+            <key>label</key><string>实时纹理皮肤</string>
+            <key>key</key><string>skin</string>
+            <key>defaults</key><string>com.mowang.dafeiyupet</string>
+            <key>default</key><string>original</string>
+            <key>PostNotification</key><string>com.mowang.dafeiyupet.preferences-changed</string>
+            <key>validTitles</key><array>
+                <string>原动作（回退）</string><string>DeepSeek · 原色</string><string>Harness · 纯黑</string><string>ChatGPT · 银白</string><string>Claude · 赤陶</string><string>Gemini · 四色</string><string>Qwen · 紫</string><string>Kimi · 黑蓝</string><string>MiniMax · 玫红橙</string>
+            </array>
+            <key>validValues</key><array>
+                <string>original</string><string>deepseek</string><string>harness</string><string>chatgpt</string><string>claude</string><string>gemini</string><string>qwen</string><string>kimi</string><string>minimax</string>
+            </array>
+        </dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>分层实时纹理预览</string>
+			<key>footerText</key>
+			<string>默认关闭、仅主屏幕。原动作保留回退；八种皮肤使用原始部件和五官纹理实时合成，支持呼吸、眨眼和骨骼摆动，不是缩略图或GIF。实时版动作是原生程序化近似，不承诺复刻原GIF动作。保持原有点击拖动、范围及锁屏/键盘隐藏规则。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>label</key>
+			<string>启用大肥鱼</string>
+			<key>key</key>
+			<string>enabled</string>
+			<key>defaults</key>
+			<string>com.mowang.dafeiyupet</string>
+			<key>default</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>label</key>
+			<string>自动漫游（可关闭）</string>
+			<key>key</key>
+			<string>roam</string>
+			<key>defaults</key>
+			<string>com.mowang.dafeiyupet</string>
+			<key>default</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>label</key>
+			<string>大小</string>
+			<key>key</key>
+			<string>size</string>
+			<key>defaults</key>
+			<string>com.mowang.dafeiyupet</string>
+			<key>default</key>
+			<integer>180</integer>
+			<key>validTitles</key>
+			<array>
+				<string>小 120</string>
+				<string>中 180</string>
+				<string>大 240</string>
+				<string>超大 300</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<integer>120</integer>
+				<integer>180</integer>
+				<integer>240</integer>
+				<integer>300</integer>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>label</key>
+			<string>透明度</string>
+			<key>key</key>
+			<string>opacity</string>
+			<key>defaults</key>
+			<string>com.mowang.dafeiyupet</string>
+			<key>default</key>
+			<real>1.0</real>
+			<key>validTitles</key>
+			<array>
+				<string>100%</string>
+				<string>80%</string>
+				<string>60%</string>
+				<string>40%</string>
+				<string>20%</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<real>1.0</real>
+				<real>0.8</real>
+				<real>0.6</real>
+				<real>0.4</real>
+				<real>0.2</real>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>label</key>
+			<string>活动范围</string>
+			<key>key</key>
+			<string>scope</string>
+			<key>defaults</key>
+			<string>com.mowang.dafeiyupet</string>
+			<key>default</key>
+			<integer>1</integer>
+			<key>validTitles</key>
+			<array>
+				<string>主屏幕与前台App（待真机验收）</string>
+				<string>仅主屏幕</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+			</array>
+		</dict>
+        <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>天气与电量</string><key>footerText</key><string>天气默认关闭，须手动搜索并选定城市；城市关键词和所选坐标会发送给 Open-Meteo（天气模型数据，非实测）。不申请定位、不读取天气 App、无需 Key。天气缓存与失败重试间隔为 30 分钟，仅在桌宠可见且解锁时请求；失败不编造天气。免费接口限非商业使用，数据源 Open-Meteo / GeoNames。电量使用公开系统状态：20% / 10% 每充电周期各一次，另提醒开始充电和充满；首次采样不提醒。忙碌时延后，待发提醒两分钟过期，不调用 AI。</string></dict>
+        <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>天气碎碎念（先选城市）</string><key>key</key><string>weatherEnabled</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><false/></dict>
+        <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>电量提醒</string><key>key</key><string>batteryAlertsEnabled</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><true/></dict>
+        <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>离线碎碎念 · 原生替代</string><key>footerText</key><string>默认关闭。随机展示内置短句与三种碎碎念事件动作，不联网、不使用聊天记录、不调用 AI。仅累计桌宠可见时间，忙碌时延后；隐藏期间不补发。上游 AI 生成与表情配图尚未移植。</string></dict>
+        <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>自动离线碎碎念</string><key>key</key><string>whisperEnabled</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><false/></dict>
+        <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>余额碎碎念</string><key>footerText</key><string>默认关闭。只显示监控余额插件当前主体已格式化的余额与今日消耗；站点、刷新间隔及查询由监控余额插件管理，关闭其自动刷新后大肥鱼也不会自动查询。大肥鱼不读取凭据、不另发网络请求。启用后结果只在桌宠可见且空闲时短暂显示，不写入聊天记忆；原浮窗可单独隐藏。未提供今日消耗的站点显示“未知”。</string></dict>
+        <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>桌宠显示监控余额</string><key>key</key><string>balanceWhisperEnabled</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><false/></dict>
+        <dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>碎碎念间隔</string><key>key</key><string>whisperInterval</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><integer>300</integer><key>validTitles</key><array><string>30 秒</string><string>1 分钟</string><string>5 分钟</string><string>15 分钟</string><string>30 分钟</string></array><key>validValues</key><array><integer>30</integer><integer>60</integer><integer>300</integer><integer>900</integer><integer>1800</integer></array></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>自动动作 · 106 动作预览</string><key>footerText</key><string>依照权重选择待机、观察、移动或日常动作；关闭漫游或临时暂停时排除移动。已有动作播完再调度；移动为原生水平漫游替代，素材为220×124预览级。</string></dict>
+        <dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>动作偏好</string><key>key</key><string>actionMood</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><integer>0</integer><key>validTitles</key><array><string>均衡</string><string>安静</string><string>活泼</string></array><key>validValues</key><array><integer>0</integer><integer>1</integer><integer>2</integer></array></dict>
+        <dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>动作抽选间隔</string><key>key</key><string>actionInterval</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><integer>12</integer><key>validTitles</key><array><string>6 秒</string><string>12 秒</string><string>30 秒</string><string>60 秒</string></array><key>validValues</key><array><integer>6</integer><integer>12</integer><integer>30</integer><integer>60</integer></array></dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>抛掷物理</string>
+<key>footerText</key><string>参考桌面版参数，即时生效；顶部保留反弹，防止宠物飞出屏幕。</string>
+</dict>
+<dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>抛掷力度</string><key>key</key><string>throwPower</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><real>1</real><key>validTitles</key><array><string>轻柔</string><string>标准</string><string>强劲</string></array><key>validValues</key><array><real>0.5</real><real>1</real><real>1.5</real></array></dict>
+<dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>重力</string><key>key</key><string>gravity</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><integer>1400</integer><key>validTitles</key><array><string>轻盈</string><string>标准</string><string>沉重</string></array><key>validValues</key><array><integer>700</integer><integer>1400</integer><integer>2100</integer></array></dict>
+<dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>反弹弹性</string><key>key</key><string>restitution</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><real>0.78</real><key>validTitles</key><array><string>柔软</string><string>标准</string><string>弹力</string></array><key>validValues</key><array><real>0.4</real><real>0.78</real><real>0.9</real></array></dict>
+<dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>地面摩擦</string><key>key</key><string>groundFriction</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><real>2.5</real><key>validTitles</key><array><string>光滑</string><string>标准</string><string>粗糙</string></array><key>validValues</key><array><real>1</real><real>2.5</real><real>5</real></array></dict>
+<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>AI 服务配置 · 单击人物聊天</string>
+			<key>footerText</key>
+			<string>聊天通过单击桌宠打开；API Key 在聊天窗口中管理。Ollama 选择后请填写运行模型的电脑地址与模型名；不会在手机安装 Ollama。OpenAI 支持根地址、版本路径和完整端点；免鉴权服务可留空 Key。默认仅 HTTPS，拒绝重定向。</string>
+		</dict>
+		<dict><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>label</key><string>AI 服务类型</string><key>key</key><string>aiProvider</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><string>openai</string><key>validTitles</key><array><string>OpenAI 兼容 API</string><string>Ollama</string></array><key>validValues</key><array><string>openai</string><string>ollama</string></array></dict>
+        <dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>允许 HTTP（明文，仅可信网络）</string><key>key</key><string>aiAllowHTTP</string><key>defaults</key><string>com.mowang.dafeiyupet</string><key>default</key><false/></dict>
+        <dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>label</key>
+			<string>Base URL</string>
+			<key>key</key>
+			<string>aiURL</string>
+			<key>defaults</key>
+			<string>com.mowang.dafeiyupet</string>
+			<key>default</key>
+			<string>https://api.openai.com/v1</string>
+			<key>placeholder</key>
+			<string>https://api.openai.com/v1</string>
+			<key>autoCaps</key>
+			<string>none</string>
+			<key>autoCorrection</key>
+			<string>no</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>label</key>
+			<string>模型</string>
+			<key>key</key>
+			<string>aiModel</string>
+			<key>defaults</key>
+			<string>com.mowang.dafeiyupet</string>
+			<key>default</key>
+			<string>gpt-4o-mini</string>
+			<key>autoCaps</key>
+			<string>none</string>
+			<key>autoCorrection</key>
+			<string>no</string>
+		</dict>
+	</array>
+</dict>
+</plist>
