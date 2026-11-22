@@ -216,8 +216,21 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
     UIWindow *window=self.view.window;
     if(!window || !self.mowang_dafeiyupet_compact) return;
     [window makeKeyWindow];
-    BOOL accepted=self.mowang_dafeiyupet_input.isFirstResponder || [self.mowang_dafeiyupet_input becomeFirstResponder];
-    os_log(os_log_create("com.mowang.dafeiyupet","chat"),"ChatFocus key=%d requested=%d first=%d attached=%d",window.isKeyWindow,accepted,self.mowang_dafeiyupet_input.isFirstResponder,window!=nil);
+    BOOL was=self.mowang_dafeiyupet_input.isFirstResponder;
+    if(!was) [self.mowang_dafeiyupet_input becomeFirstResponder];
+    // Some SpringBoard keyboard scenes require an explicit input-view refresh after acceptance.
+    if(self.mowang_dafeiyupet_input.isFirstResponder) [self.mowang_dafeiyupet_input reloadInputViews];
+    __weak typeof(self) weak=self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,90*NSEC_PER_MSEC),dispatch_get_main_queue(),^{
+        typeof(self) owner=weak; if(!owner) return;
+        UIWindow *win=owner.view.window;
+        if(win && win.isKeyWindow && ![owner.mowang_dafeiyupet_input isFirstResponder]) {
+            [owner.mowang_dafeiyupet_input becomeFirstResponder];
+            if(owner.mowang_dafeiyupet_input.isFirstResponder) [owner.mowang_dafeiyupet_input reloadInputViews];
+        }
+        os_log(os_log_create("com.mowang.dafeiyupet","chat"),"ChatFocus retry key=%d first=%d",win.isKeyWindow,owner.mowang_dafeiyupet_input.isFirstResponder);
+    });
+    os_log(os_log_create("com.mowang.dafeiyupet","chat"),"ChatFocus key=%d requested=%d first=%d attached=%d",window.isKeyWindow,!was,self.mowang_dafeiyupet_input.isFirstResponder,window!=nil);
 }
 - (BOOL)textViewShouldBeginEditing:(UITextView *)textView {
     return YES;
@@ -307,7 +320,11 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
         BOOL ok=[MWPetDoubaoVoice saveKey:a.textFields.firstObject.text ?: @""]; a.textFields.firstObject.text=@"";
         self.mowang_dafeiyupet_status.text=ok?@"豆包语音 Key 已更新":@"豆包语音 Key 保存失败，请解锁后重试";
     }]];
-    [self presentViewController:a animated:YES completion:nil];
+    [self presentViewController:a animated:YES completion:^{
+        [self.view.window makeKeyWindow];
+        [a.textFields.firstObject becomeFirstResponder];
+        if(a.textFields.firstObject.isFirstResponder) [a.textFields.firstObject reloadInputViews];
+    }];
 }
 - (void)mowang_dafeiyupet_stopVoice {
     [self.doubaoVoice stop];
@@ -392,11 +409,11 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
         a.textFields.firstObject.text=@"";
         self.mowang_dafeiyupet_status.text=(status==errSecSuccess||(!key.length&&status==errSecItemNotFound))?@"Key 已更新":@"Keychain失败；不降级明文存储";
     }]];
-    // Present from the chat-owning window; focus only after the alert is attached.
     [self.view.window makeKeyWindow];
     [self presentViewController:a animated:YES completion:^{
         [a.view.window makeKeyWindow];
         [a.textFields.firstObject becomeFirstResponder];
+        if(a.textFields.firstObject.isFirstResponder) [a.textFields.firstObject reloadInputViews];
     }];
 }
 - (void)mowang_dafeiyupet_cancel {

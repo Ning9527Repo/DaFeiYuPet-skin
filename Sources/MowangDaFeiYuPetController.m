@@ -65,9 +65,11 @@ static NSString *mowang_dafeiyupet_balanceSourceID(void) {
 - (BOOL)_canBecomeKeyWindow { return self.mowang_dafeiyupet_chatOpen; }
 - (BOOL)canBecomeFirstResponder { return self.mowang_dafeiyupet_chatOpen; }
 // SpringBoard can suppress automatic keyboard UI independently of responder
-// acceptance. Limit the opt-in to this window, never the system's other windows.
-- (BOOL)_disableAutomaticKeyboardUI { return !self.mowang_dafeiyupet_chatOpen; }
-- (BOOL)_disableAutomaticKeyboardBehavior { return !self.mowang_dafeiyupet_chatOpen; }
+// acceptance. This window is the only one that hosts our chat/key editors, so
+// automatic keyboard UI is always allowed here; the same window still ignores
+// touches outside the pet body and dialogs via hitTest below.
+- (BOOL)_disableAutomaticKeyboardUI { return NO; }
+- (BOOL)_disableAutomaticKeyboardBehavior { return NO; }
 - (UIView *)hitTest:(CGPoint)p withEvent:(UIEvent *)event {
     if(self.mowang_dafeiyupet_chatOpen) {
         if(mowang_dafeiyupet_locked()) return nil;
