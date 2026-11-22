@@ -1,3 +1,4 @@
+#import "MWPetDoubaoVoice.h"
 #import "MowangDaFeiYuPetChatController.h"
 #import "MowangDaFeiYuPetPreferences.h"
 #import <Security/Security.h>
@@ -23,6 +24,7 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
 @property(nonatomic,strong) NSMutableArray *mowang_dafeiyupet_history;
 @property(nonatomic) BOOL mowang_dafeiyupet_ollama;
 @property(nonatomic,strong) AVSpeechSynthesizer *mowang_dafeiyupet_speech;
+@property(nonatomic,strong) MWPetDoubaoVoice *doubaoVoice;
 @property(nonatomic,strong) UISwitch *mowang_dafeiyupet_voiceEnabled;
 @property(nonatomic,strong) UISlider *mowang_dafeiyupet_voiceVolume;
 @property(nonatomic,strong) UILabel *mowang_dafeiyupet_voiceStatus;
@@ -70,12 +72,13 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(mowang_dafeiyupet_stopVoice) name:UIApplicationWillResignActiveNotification object:nil];
     UILabel *voiceNote=[UILabel new]; voiceNote.numberOfLines=0;
     voiceNote.font=[UIFont systemFontOfSize:13];
-    voiceNote.text=@"回复语音（本次聊天生效）：可从设备已有中文声线中选择，不是视频原声。默认关闭；系统媒体音量也会影响播放。";
+    voiceNote.text=@"豆包在线语音：朗读文字将发送至火山引擎并消耗账户额度。默认关闭；声线与开关保存在本机，Key 仅存 Keychain。";
     [stack addArrangedSubview:voiceNote];
     UIStackView *voiceRow=[UIStackView new]; voiceRow.spacing=12;
     UILabel *voiceLabel=[UILabel new]; voiceLabel.text=@"朗读回复";
     [voiceRow addArrangedSubview:voiceLabel];
     self.mowang_dafeiyupet_voiceEnabled=[UISwitch new];
+    self.mowang_dafeiyupet_voiceEnabled.on=[mowang_dafeiyupet_readPreferences()[@"doubaoReadReplies"] boolValue];
     self.mowang_dafeiyupet_voiceEnabled.accessibilityLabel=@"朗读回复";
     [self.mowang_dafeiyupet_voiceEnabled addTarget:self action:@selector(mowang_dafeiyupet_voiceChanged) forControlEvents:UIControlEventValueChanged];
     [voiceRow addArrangedSubview:self.mowang_dafeiyupet_voiceEnabled]; [stack addArrangedSubview:voiceRow];
@@ -90,11 +93,11 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
     [stop addTarget:self action:@selector(mowang_dafeiyupet_stopVoice) forControlEvents:UIControlEventTouchUpInside]; [voiceButtons addArrangedSubview:stop];
     [stack addArrangedSubview:voiceButtons];
     UIButton *chooseVoice=[UIButton buttonWithType:UIButtonTypeSystem];
-    [chooseVoice setTitle:@"选择中文声线（本次聊天）" forState:UIControlStateNormal];
+    [chooseVoice setTitle:@"豆包声线 / API Key" forState:UIControlStateNormal];
     [chooseVoice addTarget:self action:@selector(mowang_dafeiyupet_chooseVoice:) forControlEvents:UIControlEventTouchUpInside];
     [stack addArrangedSubview:chooseVoice];
     self.mowang_dafeiyupet_voiceStatus=[UILabel new]; self.mowang_dafeiyupet_voiceStatus.numberOfLines=0;
-    self.mowang_dafeiyupet_voiceStatus.font=[UIFont systemFontOfSize:13]; self.mowang_dafeiyupet_voiceStatus.text=@"语音就绪 · 每次最多朗读600字符";
+    self.mowang_dafeiyupet_voiceStatus.font=[UIFont systemFontOfSize:13]; self.mowang_dafeiyupet_voiceStatus.text=@"豆包语音 · 每次最多朗读600字符";
     [stack addArrangedSubview:self.mowang_dafeiyupet_voiceStatus];
     self.navigationItem.rightBarButtonItem=[[UIBarButtonItem alloc] initWithTitle:@"新对话" style:UIBarButtonItemStylePlain target:self action:@selector(mowang_dafeiyupet_clear)];
     self.mowang_dafeiyupet_input=[UITextView new]; self.mowang_dafeiyupet_input.delegate=self;
@@ -185,10 +188,11 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
         self.mowang_dafeiyupet_memoryEnabled.on=[pet[@"memoryEnabled"] boolValue];
         self.mowang_dafeiyupet_memoryEnabled.enabled=self.mowang_dafeiyupet_petID.length>0;
         self.mowang_dafeiyupet_voiceEnabled=[UISwitch new];
+    self.mowang_dafeiyupet_voiceEnabled.on=[mowang_dafeiyupet_readPreferences()[@"doubaoReadReplies"] boolValue];
         self.mowang_dafeiyupet_voiceVolume=[UISlider new]; self.mowang_dafeiyupet_voiceVolume.value=.7;
     }
     BOOL memory=[pet[@"memoryEnabled"] boolValue];
-    UIAlertController *menu=[UIAlertController alertControllerWithTitle:@"聊天设置" message:[NSString stringWithFormat:@"本机记忆：%@（最近6轮）\n语音朗读：%@（仅本次聊天）",memory?@"开启":@"关闭",self.mowang_dafeiyupet_voiceEnabled.on?@"开启":@"关闭"] preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *menu=[UIAlertController alertControllerWithTitle:@"聊天设置" message:[NSString stringWithFormat:@"本机记忆：%@（最近6轮）\n豆包语音朗读：%@",memory?@"开启":@"关闭",self.mowang_dafeiyupet_voiceEnabled.on?@"开启":@"关闭"] preferredStyle:UIAlertControllerStyleActionSheet];
     NSString *memoryTitle=memory?@"关闭本机记忆并删除保存记录":@"开启本机记忆";
     [menu addAction:[UIAlertAction actionWithTitle:memoryTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){
         self.mowang_dafeiyupet_memoryEnabled.on=!memory;
@@ -198,7 +202,7 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
         self.mowang_dafeiyupet_voiceEnabled.on=!self.mowang_dafeiyupet_voiceEnabled.on;
         [self mowang_dafeiyupet_voiceChanged];
     }]];
-    [menu addAction:[UIAlertAction actionWithTitle:@"选择中文声线" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ [self mowang_dafeiyupet_chooseVoice:sender]; }]];
+    [menu addAction:[UIAlertAction actionWithTitle:@"豆包声线 / API Key" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ [self mowang_dafeiyupet_chooseVoice:sender]; }]];
     [menu addAction:[UIAlertAction actionWithTitle:@"试听当前声线" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ [self mowang_dafeiyupet_previewVoice]; }]];
     [menu addAction:[UIAlertAction actionWithTitle:@"停止语音" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ [self mowang_dafeiyupet_stopVoice]; }]];
     [menu addAction:[UIAlertAction actionWithTitle:@"余额查询与站点设置请使用监控余额插件" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ self.mowang_dafeiyupet_status.text=@"余额和今日消耗由监控余额插件负责；这里不重复发起查询。"; }]];
@@ -280,49 +284,52 @@ static NSDictionary *mowang_dafeiyupet_keyQuery(void) {
     else self.mowang_dafeiyupet_status.text=self.mowang_dafeiyupet_memoryEnabled.on?@"本机记忆已开启 · 后续请求会发送最近6轮":@"本机保存记录已删除 · 当前页上下文暂留";
 }
 - (void)mowang_dafeiyupet_chooseVoice:(UIView *)sender {
-    NSArray<AVSpeechSynthesisVoice *> *voices=[[AVSpeechSynthesisVoice speechVoices] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(AVSpeechSynthesisVoice *voice, NSDictionary *bindings) {
-        return [voice.language hasPrefix:@"zh-"];
-    }]];
-    voices=[voices sortedArrayUsingComparator:^NSComparisonResult(AVSpeechSynthesisVoice *a, AVSpeechSynthesisVoice *b) {
-        NSComparisonResult language=[a.language compare:b.language];
-        return language!=NSOrderedSame?language:[a.name localizedStandardCompare:b.name];
-    }];
-    UIAlertController *picker=[UIAlertController alertControllerWithTitle:@"选择中文声线" message:@"只列出设备已有的系统声线；点击声线可试听，本次聊天的后续回复将使用它。" preferredStyle:UIAlertControllerStyleActionSheet];
-    for(AVSpeechSynthesisVoice *voice in voices) {
-        NSString *title=[NSString stringWithFormat:@"%@ · %@%@",voice.name,voice.language,[voice.identifier isEqualToString:self.mowang_dafeiyupet_voiceIdentifier]?@" ✓":@""];
-        [picker addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){
-            self.mowang_dafeiyupet_voiceIdentifier=voice.identifier;
+    UIAlertController *picker=[UIAlertController alertControllerWithTitle:@"豆包声线" message:@"试听会发送短句至火山引擎，按账户额度计费。声线需要相应权限；失败不回退系统声音。" preferredStyle:UIAlertControllerStyleActionSheet];
+    [picker addAction:[UIAlertAction actionWithTitle:@"设置 / 删除豆包语音 API Key" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ [self doubaoEditKey]; }]];
+    for(NSDictionary *voice in MWPetDoubaoVoice.voices) {
+        [picker addAction:[UIAlertAction actionWithTitle:voice[@"name"] style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){
+            self.mowang_dafeiyupet_voiceIdentifier=voice[@"id"];
+            NSError *error=nil;
+            if(!mowang_dafeiyupet_writePreference(@"doubaoSpeaker",voice[@"id"],&error)) { self.mowang_dafeiyupet_status.text=@"声线保存失败"; return; }
             [self mowang_dafeiyupet_previewVoice];
         }]];
     }
-    if(!voices.count) picker.message=@"本机未找到可用中文声线。可在系统辅助功能的朗读内容中管理声线。";
     [picker addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
     picker.popoverPresentationController.sourceView=sender ?: self.view;
     picker.popoverPresentationController.sourceRect=sender?sender.bounds:self.view.bounds;
     [self presentViewController:picker animated:YES completion:nil];
 }
+- (void)doubaoEditKey {
+    UIAlertController *a=[UIAlertController alertControllerWithTitle:@"豆包语音 API Key" message:@"仅保存到本机 Keychain，与 DeepSeek 聊天 Key 分离。留空保存将删除；不展示已保存密钥。" preferredStyle:UIAlertControllerStyleAlert];
+    [a addTextFieldWithConfigurationHandler:^(UITextField *f){ f.secureTextEntry=YES; f.placeholder=@"豆包语音 API Key"; f.autocorrectionType=UITextAutocorrectionTypeNo; f.autocapitalizationType=UITextAutocapitalizationTypeNone; }];
+    [a addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    [a addAction:[UIAlertAction actionWithTitle:@"保存" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action){
+        BOOL ok=[MWPetDoubaoVoice saveKey:a.textFields.firstObject.text ?: @""]; a.textFields.firstObject.text=@"";
+        self.mowang_dafeiyupet_status.text=ok?@"豆包语音 Key 已更新":@"豆包语音 Key 保存失败，请解锁后重试";
+    }]];
+    [self presentViewController:a animated:YES completion:nil];
+}
 - (void)mowang_dafeiyupet_stopVoice {
+    [self.doubaoVoice stop];
     self.mowang_dafeiyupet_utterance=nil;
     [self.mowang_dafeiyupet_speech stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
     self.mowang_dafeiyupet_voiceStatus.text=@"语音已停止";
 }
 - (void)mowang_dafeiyupet_voiceChanged {
+    NSError *error=nil;
+    if(!mowang_dafeiyupet_writePreference(@"doubaoReadReplies",@(self.mowang_dafeiyupet_voiceEnabled.on),&error)) self.mowang_dafeiyupet_status.text=@"朗读开关保存失败";
     if(!self.mowang_dafeiyupet_voiceEnabled.on) [self mowang_dafeiyupet_stopVoice];
 }
 - (void)mowang_dafeiyupet_speak:(NSString *)text {
     [self mowang_dafeiyupet_stopVoice];
     if(UIApplication.sharedApplication.applicationState!=UIApplicationStateActive || !text.length) return;
-    AVSpeechSynthesisVoice *voice=self.mowang_dafeiyupet_voiceIdentifier.length?[AVSpeechSynthesisVoice voiceWithIdentifier:self.mowang_dafeiyupet_voiceIdentifier]:nil;
-    if(!voice || ![voice.language hasPrefix:@"zh-"]) voice=[AVSpeechSynthesisVoice voiceWithLanguage:@"zh-CN"];
-    if(!voice) { self.mowang_dafeiyupet_status.text=@"系统中文音色不可用；文字回复仍可阅读。"; return; }
-    // Bound speech separately from the displayed reply to avoid minutes of queued audio.
-    NSRange range=[text rangeOfComposedCharacterSequencesForRange:NSMakeRange(0,MIN(text.length,600))];
-    AVSpeechUtterance *utterance=[AVSpeechUtterance speechUtteranceWithString:[text substringWithRange:range]];
-    utterance.voice=voice; utterance.rate=AVSpeechUtteranceDefaultSpeechRate;
-    utterance.volume=self.mowang_dafeiyupet_voiceVolume.value;
-    self.mowang_dafeiyupet_utterance=utterance;
-    self.mowang_dafeiyupet_voiceStatus.text=@"语音准备中";
-    [self.mowang_dafeiyupet_speech speakUtterance:utterance];
+    if(!self.doubaoVoice) {
+        self.doubaoVoice=[MWPetDoubaoVoice new]; __weak typeof(self) weak=self;
+        self.doubaoVoice.status=^(NSString *message){ weak.mowang_dafeiyupet_voiceStatus.text=message; weak.mowang_dafeiyupet_status.text=message; };
+    }
+    id saved=mowang_dafeiyupet_readPreferences()[@"doubaoSpeaker"];
+    NSString *speaker=[saved isKindOfClass:NSString.class]?saved:@"zh_female_xiaohe_uranus_bigtts";
+    [self.doubaoVoice speak:text speaker:speaker volume:self.mowang_dafeiyupet_voiceVolume.value];
 }
 - (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer didStartSpeechUtterance:(AVSpeechUtterance *)utterance {
     dispatch_async(dispatch_get_main_queue(), ^{ if(utterance==self.mowang_dafeiyupet_utterance) self.mowang_dafeiyupet_voiceStatus.text=@"语音播放中"; });
