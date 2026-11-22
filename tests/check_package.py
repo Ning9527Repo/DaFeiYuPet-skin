@@ -8,7 +8,9 @@ package=Path(sys.argv[1]).resolve(); scheme=sys.argv[2]
 def run(*args): return subprocess.check_output(args,text=True).strip()
 meta=run('dpkg-deb','-f',str(package)); print(meta)
 expected='iphoneos-arm64e' if scheme=='roothide' else 'iphoneos-arm64'
-assert f'Architecture: {expected}' in meta and 'Version: 0.1.1-skin1' in meta
+control=(Path(__file__).resolve().parents[1]/'control').read_text()
+version=next(line.split(':',1)[1].strip() for line in control.splitlines() if line.startswith('Version:'))
+assert f'Architecture: {expected}' in meta and f'Version: {version}\n' in meta+'\n'
 assert 'Package: com.mowang.dafeiyupet' in meta
 
 def slices(path):
