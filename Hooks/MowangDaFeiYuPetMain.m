@@ -158,6 +158,7 @@ static void mowang_dafeiyupet_installMedia(void) {
         mowang_dafeiyupet_lyricNet=[MowangDaFeiYuPetLyricFetcher new];
         __weak MowangDaFeiYuPetController *controller=[MowangDaFeiYuPetController mowang_dafeiyupet_shared];
         mowang_dafeiyupet_lyricNet.onReady=^{ [controller mowang_dafeiyupet_lyricLine:nil]; };
+        mowang_dafeiyupet_lyricNet.onStatus=^(NSString *status){ [controller mowang_dafeiyupet_lyricStatus:status]; };
     }
     mowang_dafeiyupet_mediaTimer=dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,0,0,dispatch_get_main_queue());
     dispatch_source_set_timer(mowang_dafeiyupet_mediaTimer,DISPATCH_TIME_NOW,3*NSEC_PER_SEC,NSEC_PER_SEC/4);

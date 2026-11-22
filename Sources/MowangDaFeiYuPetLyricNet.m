@@ -36,7 +36,8 @@
     id title=info[@"kMRMediaRemoteNowPlayingInfoTitle"], artist=info[@"kMRMediaRemoteNowPlayingInfoArtist"], duration=info[@"kMRMediaRemoteNowPlayingInfoDuration"];
     double durationValue=[duration isKindOfClass:NSNumber.class]?[duration doubleValue]:0;
     NSURL *url=mowang_dafeiyupet_lyricSearchURL(title,artist);
-    if(!url) return;
+    if(!url) { if(self.onStatus) self.onStatus(@"歌词：标题无效，无法搜索"); return; }
+    if(self.onStatus) self.onStatus(@"歌词：正在搜索…");
     _fetchingIdentity=identity;
     NSUInteger generation=++_generation;
     __weak typeof(self) weak=self;
@@ -50,6 +51,7 @@
             if(error || status!=200 || !data || data.length>1<<20) {
                 self->_failureIdentity=identity; self->_nextRetry=CACurrentMediaTime()+60;
                 os_log(os_log_create("com.mowang.dafeiyupet","lyrics"),"Network lyric fetch failed status=%ld",(long)status);
+                if(self.onStatus) self.onStatus(@"歌词：在线获取失败，请检查网络");
                 return;
             }
             id json=[NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -57,6 +59,7 @@
             if(!timeline.count) {
                 self->_failureIdentity=identity; self->_nextRetry=CACurrentMediaTime()+120;
                 os_log(os_log_create("com.mowang.dafeiyupet","lyrics"),"No synced lyrics found");
+                if(self.onStatus) self.onStatus(@"歌词：未找到该歌曲的同步歌词");
                 return;
             }
             self->_cachedIdentity=identity; self->_timeline=timeline; self->_failureIdentity=nil;

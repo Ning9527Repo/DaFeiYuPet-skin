@@ -81,7 +81,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: DaFeiYuPet-0.1.3-lyric1-${{ matrix.scheme }}
+          name: DaFeiYuPet-0.1.4-skin2-${{ matrix.scheme }}
           path: |
             packages/*.deb
             build/*.txt

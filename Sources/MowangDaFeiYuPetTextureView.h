@@ -6,4 +6,5 @@
 @property(nonatomic,readonly,copy) NSString *failure;
 - (instancetype)initWithAssetRoot:(NSString *)root scheme:(NSString *)scheme;
 - (void)advanceToTime:(CFTimeInterval)time action:(NSString *)action dragging:(BOOL)dragging flying:(BOOL)flying;
+- (double)durationForAction:(NSString *)action;
 @end

@@ -1,4 +1,6 @@
 #import "MowangDaFeiYuPetTextureView.h"
+#import "MWPetLiveActions.h"
+#import "MWPetActionProps.h"
 #import <QuartzCore/QuartzCore.h>
 #import <math.h>
 
@@ -12,7 +14,14 @@
 @implementation MWTexturePiece
 @end
 
-@interface MowangDaFeiYuPetTextureView ()
+@interface MowangDaFeiYuPetTextureView () {
+    double _motion[MWChannels], _blendFrom[MWChannels];
+}
+@property(nonatomic,strong) MWPetLiveActions *liveActions;
+@property(nonatomic,strong) MWPetActionProps *actionProps;
+@property(nonatomic,strong) NSDictionary *actionClip;
+@property(nonatomic,copy) NSString *currentAction;
+@property(nonatomic) double actionElapsed, blendElapsed, lastTick;
 @property(nonatomic,readwrite,copy) NSString *scheme, *failure;
 @property(nonatomic,strong) NSDictionary *model;
 @property(nonatomic,strong) NSArray<MWTexturePiece *> *pieces;
@@ -77,7 +86,16 @@ static CGRect MWBox(NSArray *a) { return CGRectMake([a[0] doubleValue],[a[1] dou
         if(!p) { self.failure=[@"Missing expression: " stringByAppendingString:key]; return self; } features[key]=p;
     }
     self.pieces=[parts sortedArrayUsingComparator:^NSComparisonResult(MWTexturePiece *a,MWTexturePiece *b) { return a.z<b.z?NSOrderedAscending:(a.z>b.z?NSOrderedDescending:NSOrderedSame); }];
-    self.features=features; self.expression=@"neutral"; return self;
+    self.features=features; self.expression=@"neutral";
+    NSString *actionRoot=[[root stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"LiveActions"];
+    self.liveActions=[[MWPetLiveActions alloc] initWithRoot:actionRoot];
+    if(self.liveActions.failure){self.failure=self.liveActions.failure;return self;}
+    NSMutableSet *required=[NSMutableSet new];
+    for(NSDictionary *clip in self.liveActions.clips.allValues) [required addObjectsFromArray:clip[@"props"]];
+    self.actionProps=[[MWPetActionProps alloc] initWithRoot:actionRoot required:required];
+    if(self.actionProps.failure){self.failure=self.actionProps.failure;return self;}
+    MWNeutral(_motion); MWNeutral(_blendFrom);
+    return self;
 }
 // Apply hierarchy in original model coordinates. Flat z drawing is intentional:
 // parenting geometry under one CALayer would wrongly pull all hair in front of face/arms.
@@ -89,26 +107,29 @@ static CGRect MWBox(NSArray *a) { return CGRectMake([a[0] doubleValue],[a[1] dou
 }
 - (void)parent:(NSString *)parent context:(CGContextRef)c {
     double t=UIAccessibilityIsReduceMotionEnabled()?0:self.time;
-    double breath=sin(t*2.1), walk=self.moving?sin(t*7):0;
+    double breath=sin(t*2.1);
     CGPoint body=[self pivot:@"body"];
+    CGContextTranslateCTM(c,_motion[MWX],_motion[MWY]-9.6*_motion[MWSit]);
     CGContextTranslateCTM(c,body.x,body.y);
-    CGContextScaleCTM(c,1+.003*breath,1+.008*breath);
-    CGContextRotateCTM(c,.009*sin(t*.85)+(self.dragging?.055*sin(t*3):0));
+    CGContextScaleCTM(c,_motion[MWSX]*(1+.003*breath),_motion[MWSY]*(1+.008*breath));
+    CGContextRotateCTM(c,_motion[MWAngle]+.009*sin(t*.85));
     CGContextTranslateCTM(c,-body.x,-body.y);
+    // Symmetric 2D yaw is a deliberate 2.5D turn, not fabricated rear-view artwork.
+    double yaw=_motion[MWYaw];
+    CGContextTranslateCTM(c,128,0);CGContextScaleCTM(c,cos(yaw*M_PI),1);CGContextTranslateCTM(c,-128,0);
     BOOL head=[@[@"headMid",@"headFeat",@"hairSway",@"bangsSway",@"finNear",@"finFar",@"ahoge"] containsObject:parent];
-    // model parents resolve as body → waist → neck → head{Back,Mid,Feat,Front}.
-    // Arms inherit waist; tailBend inherits tail; leg/skirt roots inherit body.
-    if(head || [parent isEqual:@"armNear"] || [parent isEqual:@"armFar"]) [self rotate:c pivot:@"waist" angle:.006*sin(t*1.1)];
-    if(head) [self rotate:c pivot:@"neck" angle:.018*sin(t*1.2)];
+    if(head || [parent isEqual:@"armNear"] || [parent isEqual:@"armFar"] || [parent isEqual:@"body"]) [self rotate:c pivot:@"waist" angle:_motion[MWWaist]+.006*sin(t*1.1)];
+    if(head) [self rotate:c pivot:@"neck" angle:_motion[MWHead]+.018*sin(t*1.2)];
     if([parent isEqual:@"hairSway"]) [self rotate:c pivot:@"head" angle:.022*sin(t*1.6-.4)];
     else if([parent isEqual:@"bangsSway"]) [self rotate:c pivot:@"head" angle:.009*sin(t*1.6-.2)];
-    else if([parent isEqual:@"tailBend"]) [self rotate:c pivot:@"tail" angle:(self.dragging?.19:.075)*sin(t*2.6)];
-    else if([parent isEqual:@"armNear"]) [self rotate:c pivot:parent angle:.025*sin(t*2)+.08*walk+(self.dragging?-.22:0)];
-    else if([parent isEqual:@"armFar"]) [self rotate:c pivot:parent angle:-.02*sin(t*2)-.08*walk+(self.dragging?.18:0)];
-    else if([parent isEqual:@"legBack"] || [parent isEqual:@"legFront"]) [self rotate:c pivot:parent angle:([parent isEqual:@"legBack"]?1:-1)*(.05*walk+(self.flying?.10:0))];
+    else if([parent isEqual:@"tailBend"]) [self rotate:c pivot:@"tail" angle:_motion[MWTail]+(self.dragging?.19:.075)*sin(t*2.6)];
+    else if([parent isEqual:@"armNear"]) [self rotate:c pivot:parent angle:-_motion[MWArmN]+.025*sin(t*2)];
+    else if([parent isEqual:@"armFar"]) [self rotate:c pivot:parent angle:-_motion[MWArmF]-.02*sin(t*2)];
+    else if([parent isEqual:@"legBack"]) [self rotate:c pivot:parent angle:_motion[MWLegB]];
+    else if([parent isEqual:@"legFront"]) [self rotate:c pivot:parent angle:_motion[MWLegF]];
     else if([parent isEqual:@"skirt"] || [parent isEqual:@"skirtSit"]) [self rotate:c pivot:@"waist" angle:.012*sin(t*1.5)];
-    else if([parent isEqual:@"finNear"] || [parent isEqual:@"finFar"]) [self rotate:c pivot:parent angle:.04*sin(t*2.2)];
-    else if([parent isEqual:@"ahoge"]) [self rotate:c pivot:parent angle:.08*sin(t*2.8)];
+    else if([parent isEqual:@"finNear"] || [parent isEqual:@"finFar"]) [self rotate:c pivot:parent angle:_motion[MWFin]+.04*sin(t*2.2)];
+    else if([parent isEqual:@"ahoge"]) [self rotate:c pivot:parent angle:_motion[MWAhoge]+.08*sin(t*2.8)];
 }
 - (void)drawPiece:(MWTexturePiece *)piece context:(CGContextRef)c openness:(double)openness {
     if(!piece) return;
@@ -174,12 +195,41 @@ static CGRect MWBox(NSArray *a) { return CGRectMake([a[0] doubleValue],[a[1] dou
         [self drawPiece:piece context:c openness:1];
     }
     if(!faceDrawn) [self drawFace:c];
+    // Draw action props in their coordinate spaces (hand/floor/ambient) at the clip phase.
+    if(self.actionClip) {
+        NSArray *props=self.actionClip[@"props"];
+        NSString *kind=self.actionClip[@"kind"];
+        NSNumber *variant=self.actionClip[@"variant"];
+        double duration=[self.actionClip[@"duration"] doubleValue];
+        double phase=duration>0?fmin(1,self.actionElapsed/duration):1;
+        if(props.count) {
+            for(NSString *space in @[@"near",@"far",@"ground",@"ambient"])
+                [self.actionProps drawProps:props kind:kind variant:variant?[variant integerValue]:0 phase:phase elapsed:self.time space:space];
+        }
+    }
     CGContextRestoreGState(c);
+}
+- (double)durationForAction:(NSString *)action {
+    NSDictionary *clip=self.liveActions.clips[action];
+    return clip?[clip[@"duration"] doubleValue]:2.4;
 }
 - (void)advanceToTime:(CFTimeInterval)time action:(NSString *)action dragging:(BOOL)dragging flying:(BOOL)flying {
     if(!isfinite(time) || self.failure) return;
+    if(self.lastTick>0) self.actionElapsed+=(time-self.lastTick);
+    self.lastTick=time;
     self.time=time; self.dragging=dragging; self.flying=flying;
     self.moving=[action containsString:@"zoulu"] || [action containsString:@"benpao"] || [action containsString:@"tabu"];
+    if(![action isEqual:self.currentAction]) {
+        for(NSUInteger c=0;c<MWChannels;c++) _blendFrom[c]=_motion[c];
+        self.currentAction=action; self.actionElapsed=0;
+        self.actionClip=self.liveActions.clips[action];
+    }
+    if(self.actionClip) {
+        double duration=[self.actionClip[@"duration"] doubleValue];
+        if(duration>0) [self.liveActions sampleAction:action elapsed:self.actionElapsed values:_motion];
+        BOOL sit=[self.actionClip[@"kind"] isEqual:@"sit"] || [self.actionClip[@"kind"] isEqual:@"squat"];
+        (void)sit;
+    } else { MWNeutral(_motion); if(dragging){_motion[MWArmN]=.9;_motion[MWArmF]=-.8;_motion[MWAngle]=.1;_motion[MWLegB]=-.2;_motion[MWLegF]=.24;_motion[MWTail]=.25;} if(flying){_motion[MWArmN]=1.1;_motion[MWArmF]=-1;_motion[MWLegB]=-.35;_motion[MWLegF]=.3;} }
     NSString *exp=@"neutral";
     if(dragging) exp=@"drag";
     else if(flying) exp=@"surprised";

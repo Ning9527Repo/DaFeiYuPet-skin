@@ -350,7 +350,9 @@ static NSString *mowang_dafeiyupet_balanceSourceID(void) {
 - (void)mowang_dafeiyupet_visibility {
     BOOL locked=mowang_dafeiyupet_locked();
     BOOL allow=!locked && (!self.mowang_dafeiyupet_keyboardVisible || self.mowang_dafeiyupet_chat!=nil);
-    if(mowang_dafeiyupet_homeOnly()) allow=allow && mowang_dafeiyupet_homeVisible();
+    // While chat is open the window must survive across any foreground app so the
+    // keyboard keeps working; the home-only scope still hides the passive pet otherwise.
+    if(mowang_dafeiyupet_homeOnly()) allow=allow && (self.mowang_dafeiyupet_chat!=nil || mowang_dafeiyupet_homeVisible());
     if(!allow) { [self mowang_dafeiyupet_destroy]; return; }
     if(!self.mowang_dafeiyupet_window) [self mowang_dafeiyupet_create];
     UIWindow *w=self.mowang_dafeiyupet_window;
@@ -796,9 +798,10 @@ static NSString *mowang_dafeiyupet_balanceSourceID(void) {
         self.mowang_dafeiyupet_bubble.hidden=YES;
         self.mowang_dafeiyupet_lyricBubble=NO;
     }
-    // Lyrics yield to chat, menus, scores, action feedback, messages and whispers.
+    // Lyrics yield to chat and menus but render across any foreground app while the pet
+    // window exists; they follow the playing track and are not blocked by scope 1.
     if(!valid || !self.mowang_dafeiyupet_window || self.mowang_dafeiyupet_chat || self.mowang_dafeiyupet_menu ||
-       mowang_dafeiyupet_locked() || (mowang_dafeiyupet_homeOnly() && !mowang_dafeiyupet_homeVisible()) ||
+       mowang_dafeiyupet_locked() ||
        (!self.mowang_dafeiyupet_bubble.hidden && !self.mowang_dafeiyupet_lyricBubble && CACurrentMediaTime()<=self.mowang_dafeiyupet_bubbleUntil)) return;
     if(self.mowang_dafeiyupet_lyricBubble && !self.mowang_dafeiyupet_bubble.hidden && [self.mowang_dafeiyupet_bubble.text isEqualToString:line]) {
         self.mowang_dafeiyupet_bubbleUntil=CACurrentMediaTime()+5;
@@ -810,6 +813,23 @@ static NSString *mowang_dafeiyupet_balanceSourceID(void) {
     self.mowang_dafeiyupet_whisperBubble=NO;
     self.mowang_dafeiyupet_lyricBubble=YES;
     self.mowang_dafeiyupet_bubbleUntil=CACurrentMediaTime()+5;
+    [self mowang_dafeiyupet_place];
+}
+- (void)mowang_dafeiyupet_lyricStatus:(NSString *)status {
+    if(!NSThread.isMainThread) {
+        dispatch_async(dispatch_get_main_queue(),^{ [self mowang_dafeiyupet_lyricStatus:status]; });
+        return;
+    }
+    if(![[MowangDaFeiYuPetConfig mowang_dafeiyupet_shared] mowang_dafeiyupet_isEnabled] ||
+       !self.mowang_dafeiyupet_window || self.mowang_dafeiyupet_chat || self.mowang_dafeiyupet_menu ||
+       mowang_dafeiyupet_locked() || ![status isKindOfClass:NSString.class] || !status.length) return;
+    // A short visible diagnostic so failures are identifiable without logs.
+    self.mowang_dafeiyupet_bubble.text=status;
+    self.mowang_dafeiyupet_bubble.accessibilityLabel=[@"歌词状态：" stringByAppendingString:status];
+    self.mowang_dafeiyupet_bubble.hidden=NO;
+    self.mowang_dafeiyupet_whisperBubble=NO;
+    self.mowang_dafeiyupet_lyricBubble=YES;
+    self.mowang_dafeiyupet_bubbleUntil=CACurrentMediaTime()+3;
     [self mowang_dafeiyupet_place];
 }
 - (void)mowang_dafeiyupet_receivedEvent:(NSString *)kind {
@@ -987,7 +1007,10 @@ static NSString *mowang_dafeiyupet_balanceSourceID(void) {
     if(self.textureView) {
         // Share physics, gestures, scope, bubble arbitration and the 30Hz clock; never decode GIFs in live mode.
         [self.textureView advanceToTime:now action:self.mowang_dafeiyupet_action dragging:self.mowang_dafeiyupet_dragging flying:self.mowang_dafeiyupet_flying];
-        if(!self.mowang_dafeiyupet_dragging && ![self.mowang_dafeiyupet_action isEqual:@"daiji-huxi-xiuxian"] && now-self.textureActionStart>2.4) [self mowang_dafeiyupet_action:@"idle"];
+        if(!self.mowang_dafeiyupet_dragging && ![self.mowang_dafeiyupet_action isEqual:@"daiji-huxi-xiuxian"]) {
+            double cap=MAX(2.4,[self.textureView durationForAction:self.mowang_dafeiyupet_action]*.85);
+            if(now-self.textureActionStart>cap) [self mowang_dafeiyupet_action:@"idle"];
+        }
         return;
     }
     if(self.mowang_dafeiyupet_loading || now<self.mowang_dafeiyupet_retryAfter) return;

@@ -39,6 +39,7 @@ static __attribute__((unused)) NSURL *mowang_dafeiyupet_lyricSearchURL(NSString 
 // backoff on failure, ephemeral session. Never persists lyrics.
 @interface MowangDaFeiYuPetLyricFetcher : NSObject
 @property(nonatomic,copy) void (^onReady)(void);
+@property(nonatomic,copy) void (^onStatus)(NSString *status);
 - (NSString *)lineForInfo:(NSDictionary *)info playing:(BOOL)playing wallNow:(NSTimeInterval)wallNow;
 - (void)clear;
 @end
