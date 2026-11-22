@@ -57,6 +57,8 @@ jobs:
           set -euo pipefail
           cc -Wall -Wextra -Werror tests/Physics.c -lm -o /tmp/dafeiyupet-physics
           /tmp/dafeiyupet-physics | tee build/physics.txt
+          clang -fobjc-arc -fblocks -Wall -Wextra -Werror -Wno-unused-parameter tests/DoubaoVoice.m -framework Foundation -framework Security -framework AVFoundation -o /tmp/dafeiyupet-voice
+          /tmp/dafeiyupet-voice | tee build/voice-protocol.txt
           python3 tests/check_live_textures.py | tee build/live-textures.txt
           python3 tests/check_source.py | tee build/contracts.txt
           python3 tests/check_bootstrap.py | tee build/bootstrap-paths.txt
@@ -77,7 +79,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: DaFeiYuPet-0.1.1-skin1-${{ matrix.scheme }}
+          name: DaFeiYuPet-0.1.2-voice1-${{ matrix.scheme }}
           path: |
             packages/*.deb
             build/*.txt

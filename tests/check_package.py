@@ -102,10 +102,14 @@ with tempfile.TemporaryDirectory() as t:
     assert skin[0]['validValues']==['original','deepseek','harness','chatgpt','claude','gemini','qwen','kimi','minimax']
     assert len(skin[0]['validTitles'])==9 and skin[0]['default']=='original'
     assert skin[0]['PostNotification']=='com.mowang.dafeiyupet.preferences-changed'
-    assert roots[0].read_bytes()==(source/'MowangDaFeiYuPetPrefs/Resources/MowangDaFeiYuPetRoot.plist').read_bytes()
+    # Theos may rewrite XML as binary plist; compare the entire decoded object.
+    assert plistlib.loads(roots[0].read_bytes())==plistlib.loads((source/'MowangDaFeiYuPetPrefs/Resources/MowangDaFeiYuPetRoot.plist').read_bytes())
     image=dylibs[0].read_bytes()
     for symbol in [b'MowangDaFeiYuPetTextureView',b'MWTexturePiece',b'drawRect:',b'LiveTextures',b'model.json']:
         assert symbol in image,('Missing native renderer marker',symbol)
+    for symbol in [b'MWPetDoubaoVoice', b'X-Api-Key', b'seed-tts-2.0', b'ICL_uranus_zh_female_jiaoruoluoli_tob', b'zh_female_lingling_uranus_bigtts']:
+        assert symbol in image, ('Missing Doubao voice marker', symbol)
+    print('PASS native Doubao client, TTS2.0 headers and voice identifiers')
     print('PASS live payload: 443 byte-identical PNGs, all metadata, original + 8 skin choices, native renderer symbols')
     assert list(root.rglob('ARTWORK-NONCOMMERCIAL.md'))
     assert list(root.rglob('PreferenceLoader/Preferences/MowangDaFeiYuPetPrefs.plist'))
