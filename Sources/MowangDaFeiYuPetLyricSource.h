@@ -5,7 +5,9 @@
 
 // A single explicitly imported song; no scanning of another app's container.
 // The caller supplies a readable local plist with title, artist, duration and lrc.
-static NSDictionary *mowang_dafeiyupet_localLyric(NSString *path) {
+// A single explicitly imported song; no scanning of another app's container.
+// The caller supplies a readable local plist with title, artist, duration and lrc.
+static __attribute__((unused)) NSDictionary *mowang_dafeiyupet_localLyric(NSString *path) {
     NSDictionary *attributes=[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
     if(![attributes[NSFileType] isEqual:NSFileTypeRegular] || [attributes[NSFileSize] unsignedLongLongValue]>600000) return nil;
     NSData *data=[NSData dataWithContentsOfFile:path options:NSDataReadingMappedIfSafe error:nil];

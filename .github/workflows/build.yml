@@ -59,6 +59,8 @@ jobs:
           /tmp/dafeiyupet-physics | tee build/physics.txt
           clang -fobjc-arc -fblocks -Wall -Wextra -Werror -Wno-unused-parameter tests/DoubaoVoice.m -framework Foundation -framework Security -framework AVFoundation -o /tmp/dafeiyupet-voice
           /tmp/dafeiyupet-voice | tee build/voice-protocol.txt
+          clang -fobjc-arc -fblocks -Wall -Wextra -Werror -Wno-unused-parameter tests/LyricNet.m -framework Foundation -o /tmp/dafeiyupet-lyricnet
+          /tmp/dafeiyupet-lyricnet | tee build/lyric-net.txt
           python3 tests/check_live_textures.py | tee build/live-textures.txt
           python3 tests/check_source.py | tee build/contracts.txt
           python3 tests/check_bootstrap.py | tee build/bootstrap-paths.txt

@@ -8,6 +8,7 @@
 #import "MowangDaFeiYuPetConfig.h"
 #import "MowangDaFeiYuPetController.h"
 #import "../Sources/MowangDaFeiYuPetLyricSource.h"
+#import "../Sources/MowangDaFeiYuPetLyricNet.h"
 #import "../Sources/MowangDaFeiYuPetPaths.h"
 
 static void (*mowang_dafeiyupet_originalLaunch)(id,SEL,id);
@@ -19,6 +20,7 @@ static CFTimeInterval mowang_dafeiyupet_mediaRequestedAt;
 static NSUInteger mowang_dafeiyupet_mediaGeneration;
 static void (*mowang_dafeiyupet_getInfo)(dispatch_queue_t,void (^)(CFDictionaryRef));
 static NSDictionary *mowang_dafeiyupet_localSong;
+static MowangDaFeiYuPetLyricFetcher *mowang_dafeiyupet_lyricNet;
 static BOOL mowang_dafeiyupet_infoInFlight;
 static CFTimeInterval mowang_dafeiyupet_infoRequestedAt;
 static NSUInteger mowang_dafeiyupet_infoGeneration;
@@ -88,7 +90,7 @@ static void mowang_dafeiyupet_pollMedia(void) {
         return;
     }
     CFTimeInterval now=CACurrentMediaTime();
-    if(mowang_dafeiyupet_getInfo && mowang_dafeiyupet_localSong) {
+    if(mowang_dafeiyupet_getInfo) {
         if(mowang_dafeiyupet_infoInFlight && now-mowang_dafeiyupet_infoRequestedAt>=5) {
             mowang_dafeiyupet_infoInFlight=NO;
             [controller mowang_dafeiyupet_lyricLine:nil];
@@ -101,7 +103,14 @@ static void mowang_dafeiyupet_pollMedia(void) {
                 if(serial!=mowang_dafeiyupet_infoGeneration) return;
                 mowang_dafeiyupet_infoInFlight=NO;
                 NSDictionary *info=raw && CFGetTypeID(raw)==CFDictionaryGetTypeID()?(__bridge NSDictionary *)raw:nil;
-                NSString *line=[[MowangDaFeiYuPetConfig mowang_dafeiyupet_shared] mowang_dafeiyupet_isEnabled] ? mowang_dafeiyupet_matchedLine(mowang_dafeiyupet_localSong,info,NSDate.date.timeIntervalSince1970,mowang_dafeiyupet_mediaHasState && mowang_dafeiyupet_mediaPlaying) : nil;
+                if(![[MowangDaFeiYuPetConfig mowang_dafeiyupet_shared] mowang_dafeiyupet_isEnabled]) {
+                    [controller mowang_dafeiyupet_lyricLine:nil];
+                    return;
+                }
+                NSDictionary *localSong=mowang_dafeiyupet_localSong;
+                NSString *line=localSong
+                    ? mowang_dafeiyupet_matchedLine(localSong,info,NSDate.date.timeIntervalSince1970,mowang_dafeiyupet_mediaHasState && mowang_dafeiyupet_mediaPlaying)
+                    : [mowang_dafeiyupet_lyricNet lineForInfo:info playing:(mowang_dafeiyupet_mediaHasState && mowang_dafeiyupet_mediaPlaying) wallNow:NSDate.date.timeIntervalSince1970];
                 [controller mowang_dafeiyupet_lyricLine:line];
             });
         }
@@ -144,7 +153,12 @@ static void mowang_dafeiyupet_installMedia(void) {
         return;
     }
     mowang_dafeiyupet_getInfo=(void (*)(dispatch_queue_t,void (^)(CFDictionaryRef)))dlsym(handle,"MRMediaRemoteGetNowPlayingInfo");
-    if(mowang_dafeiyupet_getInfo) mowang_dafeiyupet_loadLocalSong();
+    if(mowang_dafeiyupet_getInfo) {
+        mowang_dafeiyupet_loadLocalSong();
+        mowang_dafeiyupet_lyricNet=[MowangDaFeiYuPetLyricFetcher new];
+        __weak MowangDaFeiYuPetController *controller=[MowangDaFeiYuPetController mowang_dafeiyupet_shared];
+        mowang_dafeiyupet_lyricNet.onReady=^{ [controller mowang_dafeiyupet_lyricLine:nil]; };
+    }
     mowang_dafeiyupet_mediaTimer=dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,0,0,dispatch_get_main_queue());
     dispatch_source_set_timer(mowang_dafeiyupet_mediaTimer,DISPATCH_TIME_NOW,3*NSEC_PER_SEC,NSEC_PER_SEC/4);
     dispatch_source_set_event_handler(mowang_dafeiyupet_mediaTimer,^{ mowang_dafeiyupet_pollMedia(); });
