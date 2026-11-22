@@ -20,7 +20,7 @@ assert 'makeKeyAndVisible]' not in s and 'animationImages' not in s.replace('// 
 assert '[self.mowang_dafeiyupet_link invalidate]' in s and 'generation!=' in s and 'if(!allow)' in s
 assert 'return NO;' in text('Sources/MowangDaFeiYuPetConfig.m') or ' : NO;' in text('Sources/MowangDaFeiYuPetConfig.m')
 assert '(mowang_dafeiyupet_homeOnly() && !mowang_dafeiyupet_homeVisible())' in s
-assert 'if(mowang_dafeiyupet_homeOnly()) allow=allow && mowang_dafeiyupet_homeVisible();' in s
+assert 'if(mowang_dafeiyupet_homeOnly()) allow=allow && (self.mowang_dafeiyupet_chat!=nil || mowang_dafeiyupet_homeVisible());' in s
 assert 'self.hidden || !pet || pet.hidden || mowang_dafeiyupet_locked()' in s
 assert 'UIKeyboardWillShowNotification' in s and '!self.mowang_dafeiyupet_keyboardVisible' in s
 assert 'initWithWindowScene:scene' in s
